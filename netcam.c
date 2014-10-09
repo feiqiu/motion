@@ -2131,6 +2131,24 @@ static int netcam_http_build_url(netcam_context_ptr netcam, struct url_t *url)
     netcam->response = (struct rbuf *) mymalloc(sizeof(struct rbuf));
     memset(netcam->response, 0, sizeof(struct rbuf));
 
+    if (cnt->conf.netcam_userpass) {
+      int MAXBUFLEN = 10000;
+      char source[MAXBUFLEN + 1];
+      FILE *fp = fopen(cnt->conf.netcam_userpass, "r");
+      if (fp != NULL) {
+        size_t newLen = fread(source, sizeof(char), MAXBUFLEN, fp);
+        if (newLen != 0) {
+          source[++newLen] = '\0';
+          netcam->connect_request = mymalloc(newLen);
+          strcpy(netcam->connect_request, source);
+        }
+        fclose(fp);
+        if (newLen != 0) {
+          MOTION_LOG(INF, TYPE_NETCAM, NO_ERRNO, "Read %d chars from '%s' file", newLen, cnt->conf.netcam_userpass);
+          return 0;
+        }
+      }
+    }
     MOTION_LOG(INF, TYPE_NETCAM, NO_ERRNO, "%s: Netcam has flags:"
                " HTTP/1.0: %s HTTP/1.1: %s Keep-Alive %s.",  
                netcam->connect_http_10 ? "1":"0", netcam->connect_http_11 ? "1":"0", 
